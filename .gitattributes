@@ -1,0 +1,10 @@
+/.github export-ignore
+/.gitignore export-ignore
+/.phpunit.cache export-ignore
+/docker export-ignore
+/tests export-ignore
+/vendor export-ignore
+/Makefile export-ignore
+/composer.lock export-ignore
+/phpunit.xml.dist export-ignore
+/scripts export-ignore

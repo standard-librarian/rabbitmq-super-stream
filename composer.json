@@ -1,0 +1,63 @@
+{
+    "name": "stream-lib/rabbitmq-super-stream",
+    "description": "PHP client for publishing to RabbitMQ Super Streams via an internal Go helper.",
+    "type": "library",
+    "license": "MIT",
+    "keywords": [
+        "php",
+        "rabbitmq",
+        "super-stream",
+        "streams",
+        "messaging",
+        "laravel"
+    ],
+    "homepage": "https://github.com/standard-librarian/rabbitmq-super-stream",
+    "authors": [
+        {
+            "name": "stream-lib",
+            "role": "Maintainer"
+        }
+    ],
+    "support": {
+        "issues": "https://github.com/standard-librarian/rabbitmq-super-stream/issues",
+        "source": "https://github.com/standard-librarian/rabbitmq-super-stream"
+    },
+    "require": {
+        "php": "^8.2"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^11.5"
+    },
+    "autoload": {
+        "psr-4": {
+            "StreamLib\\RabbitMqSuperStream\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "StreamLib\\RabbitMqSuperStream\\Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "test": [
+            "@test:unit"
+        ],
+        "test:unit": "phpunit --testsuite unit",
+        "test:integration": "phpunit --testsuite integration"
+    },
+    "suggest": {
+        "illuminate/support": "Required only for Laravel service provider and facade integration."
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "StreamLib\\RabbitMqSuperStream\\Laravel\\SuperStreamServiceProvider"
+            ],
+            "aliases": {
+                "SuperStream": "StreamLib\\RabbitMqSuperStream\\Laravel\\Facades\\SuperStream"
+            }
+        }
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}

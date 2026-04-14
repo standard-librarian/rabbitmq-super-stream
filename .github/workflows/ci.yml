@@ -1,0 +1,40 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  unit:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25.5'
+      - run: composer install --no-interaction --prefer-dist
+      - run: make build-helper
+      - run: composer test
+      - run: make go-test
+
+  integration-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25.5'
+      - run: composer install --no-interaction --prefer-dist
+      - run: make build-helper
+      - run: docker compose -f docker/compose.yml up -d
+      - run: ./docker/setup.sh
+      - run: RUN_STREAM_INTEGRATION_TESTS=1 SUPER_STREAM_HELPER_BINARY=$PWD/resources/bin/linux-amd64/rabbitmq-super-stream-helper composer test:integration
