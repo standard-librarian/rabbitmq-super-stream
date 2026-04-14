@@ -164,6 +164,36 @@ php examples/plain-php.php
 - End users consume the package through Composer.
 - The Go helper is bundled as a standalone binary.
 - `scripts/release-binaries.sh` cross-compiles the supported targets and places them under `resources/bin/...`.
+- `scripts/package-release-assets.sh` creates `.tar.gz` release assets plus `SHA256SUMS` from the bundled helper binaries.
+
+## Publishing To Packagist
+
+1. Sign in to Packagist and submit the GitHub repository URL:
+
+```text
+https://github.com/standard-librarian/rabbitmq-super-stream
+```
+
+2. After the package is created on Packagist, copy your Packagist API token from your Packagist profile.
+
+3. Add a GitHub webhook on this repository:
+
+```text
+Payload URL: https://packagist.org/api/github?username=YOUR_PACKAGIST_USERNAME
+Content-Type: application/json
+Secret: YOUR_PACKAGIST_API_TOKEN
+```
+
+4. Keep SSL verification enabled and use the default push event.
+
+5. For every new package version:
+
+```bash
+git tag v0.1.x
+git push origin v0.1.x
+```
+
+Packagist should auto-update from the webhook. If it does not, use the package page on Packagist and trigger a manual update.
 
 ## Verification Summary
 

@@ -1,4 +1,5 @@
 /vendor/
+dist/
 /.phpunit.cache/
 /go/bin/
 /docker/.data/
