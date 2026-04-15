@@ -9,3 +9,9 @@ services:
       RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS: >-
         -rabbitmq_stream advertised_host localhost
         -rabbit loopback_users "none"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 5s
+      timeout: 10s
+      retries: 24
+      start_period: 20s

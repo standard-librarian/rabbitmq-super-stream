@@ -1,36 +1,46 @@
 #!/bin/sh
 set -eu
 
-CONTAINER_NAME=${RABBITMQ_CONTAINER_NAME:-rabbitmq}
+SERVICE_NAME=${RABBITMQ_SERVICE_NAME:-rabbitmq}
 COMPOSE_FILE=${COMPOSE_FILE:-docker/compose.yml}
+WAIT_ATTEMPTS=${RABBITMQ_WAIT_ATTEMPTS:-90}
+WAIT_INTERVAL_SECONDS=${RABBITMQ_WAIT_INTERVAL_SECONDS:-2}
 
-if ! docker compose -f "$COMPOSE_FILE" ps rabbitmq >/dev/null 2>&1; then
+compose() {
+  docker compose -f "$COMPOSE_FILE" "$@"
+}
+
+dump_diagnostics() {
+  compose ps "$SERVICE_NAME" >&2 || true
+  compose logs --tail=200 "$SERVICE_NAME" >&2 || true
+}
+
+wait_for_rabbitmq() {
+  phase=$1
+  attempts=0
+
+  until compose exec -T "$SERVICE_NAME" rabbitmq-diagnostics -q ping >/dev/null 2>&1
+  do
+    attempts=$((attempts + 1))
+    if [ "$attempts" -ge "$WAIT_ATTEMPTS" ]; then
+      echo "rabbitmq did not become ready in time during $phase" >&2
+      dump_diagnostics
+      exit 1
+    fi
+    sleep "$WAIT_INTERVAL_SECONDS"
+  done
+}
+
+if ! compose ps --status running --services | grep -qx "$SERVICE_NAME"; then
   echo "rabbitmq service is not running" >&2
+  dump_diagnostics
   exit 1
 fi
 
-ATTEMPTS=0
-until docker compose -f "$COMPOSE_FILE" exec -T rabbitmq rabbitmq-diagnostics ping >/dev/null 2>&1
-do
-  ATTEMPTS=$((ATTEMPTS + 1))
-  if [ "$ATTEMPTS" -gt 30 ]; then
-    echo "rabbitmq did not become ready in time" >&2
-    exit 1
-  fi
-  sleep 2
-done
+wait_for_rabbitmq "initial startup"
 
-docker compose -f "$COMPOSE_FILE" exec -T rabbitmq rabbitmq-plugins enable rabbitmq_stream rabbitmq_stream_management rabbitmq_amqp1_0
+compose exec -T "$SERVICE_NAME" rabbitmq-plugins enable rabbitmq_stream rabbitmq_stream_management rabbitmq_amqp1_0
 
-docker compose -f "$COMPOSE_FILE" restart rabbitmq >/dev/null
+compose restart "$SERVICE_NAME" >/dev/null
 
-ATTEMPTS=0
-until docker compose -f "$COMPOSE_FILE" exec -T rabbitmq rabbitmq-diagnostics ping >/dev/null 2>&1
-do
-  ATTEMPTS=$((ATTEMPTS + 1))
-  if [ "$ATTEMPTS" -gt 30 ]; then
-    echo "rabbitmq did not come back after plugin restart" >&2
-    exit 1
-  fi
-  sleep 2
-done
+wait_for_rabbitmq "plugin restart"
