@@ -62,8 +62,11 @@ func FromStreamError(err error, details map[string]any) *HelperError {
 	case errors.Is(err, stream.ConnectionClosed),
 		errors.Is(err, stream.StreamNotAvailable),
 		errors.Is(err, stream.LeaderNotReady),
-		errors.Is(err, stream.InternalError):
+		errors.Is(err, stream.InternalError),
+		errors.Is(err, stream.ErrProducerNotFound):
 		return Wrap("connection_failed", "RabbitMQ stream connection failed.", true, err, details)
+	case errors.Is(err, stream.ErrMessageRouteNotFound):
+		return Wrap("publish_rejected", "The message routing key did not match any super stream partition.", false, err, details)
 	case errors.Is(err, stream.ConfirmationTimoutError):
 		return Wrap("publish_indeterminate", "Timed out while waiting for a publish confirmation.", true, err, details)
 	default:

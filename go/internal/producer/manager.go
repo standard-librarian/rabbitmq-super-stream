@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/rabbitmq/rabbitmq-stream-go-client/pkg/amqp"
-	"github.com/rabbitmq/rabbitmq-stream-go-client/pkg/ha"
 	rmqmessage "github.com/rabbitmq/rabbitmq-stream-go-client/pkg/message"
 	stream "github.com/rabbitmq/rabbitmq-stream-go-client/pkg/stream"
 	"github.com/stream-lib/rabbitmq-super-stream/go-helper/internal/config"
@@ -37,7 +36,7 @@ type pendingPublish struct {
 type Manager struct {
 	cfg      *config.FileConfig
 	env      *stream.Environment
-	producer *ha.ReliableSuperStreamProducer
+	producer *superStreamProducer
 	queue    chan *pendingPublish
 	inflight sync.Map
 
@@ -216,40 +215,38 @@ func (m *Manager) sendWithRetry(ctx context.Context, req *protocol.PublishReques
 	})
 }
 
-func (m *Manager) handleConfirmations(confirmations []*stream.PartitionPublishConfirm) {
-	for _, partitionConfirm := range confirmations {
-		for _, status := range partitionConfirm.ConfirmationStatus {
-			requestID := requestIDFromMessage(status.GetMessage())
-			if requestID == "" {
-				continue
-			}
+func (m *Manager) handleConfirmations(partition string, statuses []*stream.ConfirmationStatus) {
+	for _, status := range statuses {
+		requestID := requestIDFromMessage(status.GetMessage())
+		if requestID == "" {
+			continue
+		}
 
-			value, ok := m.inflight.LoadAndDelete(requestID)
-			if !ok {
-				continue
-			}
+		value, ok := m.inflight.LoadAndDelete(requestID)
+		if !ok {
+			continue
+		}
 
-			pending, ok := value.(*pendingPublish)
-			if !ok {
-				continue
-			}
+		pending, ok := value.(*pendingPublish)
+		if !ok {
+			continue
+		}
 
-			if status.IsConfirmed() {
-				pending.resultChan <- publishResult{
-					confirmed:   true,
-					acceptedAt:  pending.acceptedAt,
-					confirmedAt: time.Now().UTC(),
-				}
-				continue
-			}
-
+		if status.IsConfirmed() {
 			pending.resultChan <- publishResult{
-				err: apperrors.FromStreamError(status.GetError(), map[string]any{
-					"request_id": requestID,
-					"partition":  partitionConfirm.Partition,
-					"error_code": status.GetErrorCode(),
-				}),
+				confirmed:   true,
+				acceptedAt:  pending.acceptedAt,
+				confirmedAt: time.Now().UTC(),
 			}
+			continue
+		}
+
+		pending.resultChan <- publishResult{
+			err: apperrors.FromStreamError(status.GetError(), map[string]any{
+				"request_id": requestID,
+				"partition":  partition,
+				"error_code": status.GetErrorCode(),
+			}),
 		}
 	}
 }
@@ -338,27 +335,6 @@ func newEnvironment(cfg *config.FileConfig) (*stream.Environment, error) {
 	return env, nil
 }
 
-func newProducer(env *stream.Environment, cfg *config.FileConfig, confirmations ha.PartitionConfirmMessageHandler) (*ha.ReliableSuperStreamProducer, error) {
-	options := stream.NewSuperStreamProducerOptions(
-		stream.NewHashRoutingStrategy(func(message rmqmessage.StreamMessage) string {
-			if message == nil {
-				return ""
-			}
-			props := message.GetApplicationProperties()
-			if props == nil {
-				return ""
-			}
-			value, ok := props[routingKeyHeader]
-			if !ok {
-				return ""
-			}
-			text, ok := value.(string)
-			if !ok {
-				return ""
-			}
-			return text
-		}),
-	).SetClientProvidedName("rabbitmq-super-stream-helper")
-
-	return ha.NewReliableSuperStreamProducer(env, cfg.Connection.SuperStream, options, confirmations)
+func newProducer(env *stream.Environment, cfg *config.FileConfig, confirmations partitionConfirmHandler) (*superStreamProducer, error) {
+	return newSuperStreamProducer(env, cfg, confirmations)
 }

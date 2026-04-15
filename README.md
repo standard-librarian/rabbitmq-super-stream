@@ -11,6 +11,7 @@ The PHP package is the public surface. The Go helper is an implementation detail
 - Local HTTP+JSON protocol over Unix domain sockets when available
 - Automatic fallback to `127.0.0.1` TCP for local helper transport
 - Helper reuse across PHP requests per effective config hash
+- Connects to an existing RabbitMQ super stream; production code does not declare streams
 - Publish confirmations, helper health checks, retries, and structured error mapping
 - Plain PHP and Laravel integration
 
@@ -101,7 +102,8 @@ The package includes a Laravel service provider and facade. See [examples/larave
 - The helper listens on a Unix socket when it can. If not, it binds a random localhost TCP port.
 - By default on Unix hosts, helper runtime files live under `/tmp/ssrs` to keep Unix socket paths short enough for macOS and Linux limits.
 - PHP talks to the helper with raw HTTP+JSON over `stream_socket_client`.
-- The helper owns one RabbitMQ environment and one reliable super-stream producer.
+- The helper owns one RabbitMQ environment and a per-partition producer set for the configured super stream.
+- On startup, the helper queries the configured super stream partitions and connects only to the partitions that already exist.
 - Publish requests are serialized through a bounded in-memory queue.
 - Confirmation callbacks map broker confirms back to the originating PHP request id.
 

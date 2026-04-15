@@ -21,3 +21,10 @@ func TestFromStreamErrorReturnsHelperErrorAsIs(t *testing.T) {
 		t.Fatal("expected helper error to pass through")
 	}
 }
+
+func TestFromStreamErrorMapsMissingProducerToConnectionFailure(t *testing.T) {
+	err := FromStreamError(stream.ErrProducerNotFound, nil)
+	if err.Code != "connection_failed" {
+		t.Fatalf("expected connection_failed, got %s", err.Code)
+	}
+}
