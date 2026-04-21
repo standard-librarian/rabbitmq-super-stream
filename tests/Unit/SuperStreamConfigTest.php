@@ -10,13 +10,6 @@ use StreamLib\RabbitMqSuperStream\Exception\ConfigurationException;
 
 final class SuperStreamConfigTest extends TestCase
 {
-    protected function tearDown(): void
-    {
-        putenv('SUPER_STREAM_HELPER_ENDPOINT');
-
-        parent::tearDown();
-    }
-
     public function test_it_builds_a_valid_config_from_array(): void
     {
         $config = SuperStreamConfig::fromArray([
@@ -80,19 +73,26 @@ final class SuperStreamConfigTest extends TestCase
         self::assertSame('helper.sidecar.internal:9081', $config->helperEndpoint);
     }
 
-    public function test_it_ignores_a_malformed_helper_endpoint_from_the_environment(): void
+    public function test_it_does_not_read_helper_endpoint_from_the_environment(): void
     {
         putenv('SUPER_STREAM_HELPER_ENDPOINT=tcp://rabbitmq-stg.example.internal');
+        putenv('SUPER_STREAM_HELPER_AUTH_TOKEN=secret-token');
 
-        $config = SuperStreamConfig::fromArray([
-            'host' => 'rabbitmq-stg.example.internal',
-            'port' => 5552,
-            'username' => 'guest',
-            'password' => 'guest',
-            'vhost' => '/',
-            'super_stream' => 'orders',
-        ]);
+        try {
+            $config = SuperStreamConfig::fromArray([
+                'host' => 'rabbitmq-stg.example.internal',
+                'port' => 5552,
+                'username' => 'guest',
+                'password' => 'guest',
+                'vhost' => '/',
+                'super_stream' => 'orders',
+            ]);
 
-        self::assertNull($config->helperEndpoint);
+            self::assertNull($config->helperEndpoint);
+            self::assertNull($config->helperAuthToken);
+        } finally {
+            putenv('SUPER_STREAM_HELPER_ENDPOINT');
+            putenv('SUPER_STREAM_HELPER_AUTH_TOKEN');
+        }
     }
 }

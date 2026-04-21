@@ -35,12 +35,10 @@ composer require stream-lib/rabbitmq-super-stream
 
 End users do not need Go installed if they use one of the bundled binary targets above.
 
-If you want to override the helper binary or connect to a separately managed helper:
+If you want to override the bundled helper binary:
 
 ```bash
 export SUPER_STREAM_HELPER_BINARY=/absolute/path/to/rabbitmq-super-stream-helper
-export SUPER_STREAM_HELPER_ENDPOINT=tcp://127.0.0.1:19092
-export SUPER_STREAM_HELPER_AUTH_TOKEN=your-token
 ```
 
 ## Basic Usage
@@ -89,8 +87,8 @@ Supported options:
 - `helper_transport_preference`
 - `helper_runtime_dir`
 - `helper_binary`
-- `helper_endpoint`
-- `helper_auth_token`
+
+The helper endpoint is managed internally by the library. Normal application configuration should not set it.
 
 ## Laravel
 

@@ -22,8 +22,6 @@ return [
             'helper_transport_preference' => env('RABBITMQ_STREAM_HELPER_TRANSPORT', 'auto'),
             'helper_runtime_dir' => env('RABBITMQ_STREAM_HELPER_RUNTIME_DIR', DIRECTORY_SEPARATOR === '/' ? '/tmp/ssrs' : null),
             'helper_binary' => env('SUPER_STREAM_HELPER_BINARY'),
-            'helper_endpoint' => env('SUPER_STREAM_HELPER_ENDPOINT'),
-            'helper_auth_token' => env('SUPER_STREAM_HELPER_AUTH_TOKEN'),
         ],
     ],
 ];

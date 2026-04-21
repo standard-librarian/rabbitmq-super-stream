@@ -40,7 +40,6 @@ final readonly class SuperStreamConfig
     {
         $host = self::string($config, 'host', '127.0.0.1');
         $port = self::int($config, 'port', 5552);
-        $explicitHelperEndpoint = self::nullableString($config, 'helper_endpoint');
 
         return new self(
             host: $host,
@@ -61,8 +60,8 @@ final readonly class SuperStreamConfig
             helperTransportPreference: self::string($config, 'helper_transport_preference', 'auto'),
             helperRuntimeDir: self::nullableString($config, 'helper_runtime_dir'),
             helperBinary: self::nullableString($config, 'helper_binary') ?? self::envOrNull('SUPER_STREAM_HELPER_BINARY'),
-            helperEndpoint: $explicitHelperEndpoint ?? self::sanitizeHelperEndpointFromEnv(self::envOrNull('SUPER_STREAM_HELPER_ENDPOINT'), $host, $port),
-            helperAuthToken: self::nullableString($config, 'helper_auth_token') ?? self::envOrNull('SUPER_STREAM_HELPER_AUTH_TOKEN'),
+            helperEndpoint: self::nullableString($config, 'helper_endpoint'),
+            helperAuthToken: self::nullableString($config, 'helper_auth_token'),
         );
     }
 
@@ -263,28 +262,6 @@ final readonly class SuperStreamConfig
         return $value === false || $value === '' ? null : $value;
     }
 
-    private static function sanitizeHelperEndpointFromEnv(?string $endpoint, string $brokerHost, int $brokerPort): ?string
-    {
-        if ($endpoint === null) {
-            return null;
-        }
-
-        $endpoint = trim($endpoint);
-        if ($endpoint === '') {
-            return null;
-        }
-
-        if (self::matchesBrokerEndpoint($endpoint, $brokerHost, $brokerPort)) {
-            return null;
-        }
-
-        if (!self::isWellFormedHelperEndpoint($endpoint)) {
-            return null;
-        }
-
-        return $endpoint;
-    }
-
     private static function assertValidHelperEndpoint(string $endpoint): void
     {
         if (!self::isWellFormedHelperEndpoint($endpoint)) {
@@ -349,18 +326,6 @@ final readonly class SuperStreamConfig
         }
 
         return false;
-    }
-
-    private static function matchesBrokerEndpoint(string $endpoint, string $brokerHost, int $brokerPort): bool
-    {
-        $brokerTargets = [
-            $brokerHost,
-            sprintf('%s:%d', $brokerHost, $brokerPort),
-            sprintf('tcp://%s', $brokerHost),
-            sprintf('tcp://%s:%d', $brokerHost, $brokerPort),
-        ];
-
-        return in_array($endpoint, $brokerTargets, true);
     }
 
     private static function defaultRuntimeDirectory(): string
