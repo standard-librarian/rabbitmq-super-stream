@@ -220,7 +220,11 @@ final class HelperProcessManager
             return $endpoint;
         }
 
-        if (preg_match('/^\d+\.\d+\.\d+\.\d+:\d+$/', $endpoint) === 1) {
+        if (
+            preg_match('/^\d+\.\d+\.\d+\.\d+:\d+$/', $endpoint) === 1
+            || preg_match('/^[A-Za-z0-9.-]+:\d+$/', $endpoint) === 1
+            || preg_match('/^\[[0-9a-f:.]+\]:\d+$/i', $endpoint) === 1
+        ) {
             return 'tcp://' . $endpoint;
         }
 
