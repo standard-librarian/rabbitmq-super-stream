@@ -24,6 +24,10 @@ func main() {
 	env, err := stream.NewEnvironment(stream.NewEnvironmentOptions().
 		SetHost(*host).
 		SetPort(*port).
+		SetAddressResolver(stream.AddressResolver{
+			Host: *host,
+			Port: *port,
+		}).
 		SetUser(*username).
 		SetPassword(*password).
 		SetVHost(*vhost))

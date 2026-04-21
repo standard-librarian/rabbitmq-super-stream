@@ -314,6 +314,10 @@ func newEnvironment(cfg *config.FileConfig) (*stream.Environment, error) {
 	options := stream.NewEnvironmentOptions().
 		SetHost(cfg.Connection.Host).
 		SetPort(cfg.Connection.Port).
+		SetAddressResolver(stream.AddressResolver{
+			Host: cfg.Connection.Host,
+			Port: cfg.Connection.Port,
+		}).
 		SetUser(cfg.Connection.Username).
 		SetPassword(cfg.Connection.Password).
 		SetVHost(cfg.Connection.VHost).
